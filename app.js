@@ -3,10 +3,20 @@ const URL_PLANILHA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSW_uNgZOC
 
 const map = L.map('map').setView([-23.5505, -46.6333], 13);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+const camadaMapa = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-}).addTo(map);
+});
+
+const camadaSatelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  maxZoom: 19,
+  attribution: 'Tiles &copy; Esri'
+});
+
+camadaMapa.addTo(map);
+
+// Botão no canto do mapa pra alternar entre visão de ruas e satélite
+L.control.layers({ 'Mapa': camadaMapa, 'Satélite': camadaSatelite }).addTo(map);
 
 // Pins próximos entram aqui em vez de irem direto pro mapa — o plugin os
 // agrupa em bolhas com contagem, que se separam conforme o zoom aumenta.
