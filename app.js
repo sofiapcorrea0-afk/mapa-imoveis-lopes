@@ -64,7 +64,7 @@ function formatarPreco(valor) {
 function montarPopup(imovel) {
   return `
     <div class="popup-imovel">
-      <img src="${imovel.foto}" alt="${imovel.nome}">
+      <img src="${imovel.foto}" alt="${imovel.nome}" loading="lazy">
       <h3>${imovel.nome}</h3>
       <p class="preco">${formatarPreco(imovel.preco)}${Number.isNaN(imovel.metragem) ? '' : ` · ${imovel.metragem}m²`}</p>
       <p class="endereco">${imovel.endereco}</p>
@@ -84,7 +84,7 @@ function renderizarImoveis(imoveis) {
     const card = document.createElement('div');
     card.className = 'card-imovel';
     card.innerHTML = `
-      <img src="${imovel.foto}" alt="${imovel.nome}">
+      <img src="${imovel.foto}" alt="${imovel.nome}" loading="lazy">
       <div>
         <h4>${imovel.nome}</h4>
         <p class="preco">${formatarPreco(imovel.preco)}${Number.isNaN(imovel.metragem) ? '' : ` · ${imovel.metragem}m²`}</p>
