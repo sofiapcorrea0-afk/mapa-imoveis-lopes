@@ -1,6 +1,16 @@
 // Link da planilha publicada como CSV (Arquivo > Compartilhar > Publicar na web)
 const URL_PLANILHA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSW_uNgZOC0GgsH91RblCQXRKBiPFNTdm3agRxnyDmk03OpZ3syftbnCWheQczAhKgsjsc3kJI6Ag97/pub?output=csv";
 
+// Web app do Apps Script que grava lat/lng de volta na planilha (Deploy > Web app)
+const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbzsjZa-Tssu8IUaYgbG7L8aGO82E8xBB33ywcG7l3LjWLdVibkvOJb37VdqDZN4aSwj/exec";
+
+// Senha só pra decidir se mostra o botão de arrastar no navegador — a
+// checagem que realmente protege a planilha acontece dentro do Apps Script.
+const SENHA_EDICAO = "1234";
+
+let modoEdicao = false;
+let todosItens = [];
+
 const map = L.map('map').setView([-23.5505, -46.6333], 13);
 
 const camadaMapa = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -87,8 +97,35 @@ function montarPopup(imovel) {
 
 function renderizarImoveis(imoveis) {
   const itens = imoveis.map(imovel => {
-    const marker = L.marker([imovel.lat, imovel.lng])
+    // Começa travado (draggable: false) — só fica arrastável depois que
+    // alguém digitar a senha certa no botão "Editar posições".
+    const marker = L.marker([imovel.lat, imovel.lng], { draggable: false })
       .bindPopup(montarPopup(imovel));
+
+    marker.on('dragend', async () => {
+      const { lat, lng } = marker.getLatLng();
+      const coords = `lat: ${lat.toFixed(6)}<br>lng: ${lng.toFixed(6)}`;
+      marker
+        .bindTooltip(`Salvando...<br>${coords}`, { permanent: true, direction: 'top', className: 'tooltip-coordenadas' })
+        .openTooltip();
+
+      try {
+        const resposta = await fetch(URL_SCRIPT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ id: imovel.id, lat, lng, senha: SENHA_EDICAO })
+        });
+        const resultado = await resposta.json();
+        marker.setTooltipContent(
+          resultado.ok
+            ? `✅ Posição salva na planilha<br>${coords}`
+            : `⚠️ Não salvou (${resultado.erro || 'erro'}) — copie manualmente:<br>${coords}`
+        );
+      } catch {
+        marker.setTooltipContent(`⚠️ Não conectou ao script — copie manualmente:<br>${coords}`);
+      }
+    });
+
     grupoMarcadores.addLayer(marker);
 
     const card = document.createElement('div');
@@ -183,6 +220,7 @@ fetch(URL_PLANILHA)
     const linhas = parseCSV(texto);
     const imoveis = linhas
       .map(linha => ({
+        id: linha.id,
         nome: linha.nome,
         tipo: linha.tipo,
         bairro: linha.bairro,
@@ -206,10 +244,42 @@ fetch(URL_PLANILHA)
         }
         return true;
       });
-    const itens = renderizarImoveis(imoveis);
-    renderizarFiltros(imoveis, itens);
+    todosItens = renderizarImoveis(imoveis);
+    renderizarFiltros(imoveis, todosItens);
   })
   .catch(erro => {
     listaEl.innerHTML = '<p style="padding:12px">Não foi possível carregar os imóveis da planilha.</p>';
     console.error('Erro ao carregar planilha:', erro);
   });
+
+const botaoEdicao = document.getElementById('botao-edicao');
+
+botaoEdicao.addEventListener('click', () => {
+  if (modoEdicao) {
+    modoEdicao = false;
+    botaoEdicao.textContent = '🔒 Editar posições';
+    botaoEdicao.classList.remove('ativo');
+  } else {
+    const senha = prompt('Senha pra editar a posição dos imóveis:');
+    if (senha === null) return;
+    if (senha !== SENHA_EDICAO) {
+      alert('Senha incorreta.');
+      return;
+    }
+    modoEdicao = true;
+    botaoEdicao.textContent = '🔓 Modo edição ativo';
+    botaoEdicao.classList.add('ativo');
+  }
+
+  todosItens.forEach(({ marker }) => {
+    // Guarda a intenção na própria opção do marcador — enquanto ele estiver
+    // escondido dentro de uma bolha de cluster, "dragging" nem existe ainda;
+    // o Leaflet só cria esse handler quando o pin aparece individual no
+    // mapa, e nessa hora ele lê essa opção pra decidir se já nasce arrastável.
+    marker.options.draggable = modoEdicao;
+    if (marker.dragging) {
+      if (modoEdicao) marker.dragging.enable();
+      else marker.dragging.disable();
+    }
+  });
+});
