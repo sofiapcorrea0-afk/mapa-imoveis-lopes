@@ -29,7 +29,20 @@
     #topo {
       padding: 10px 16px;
       background: #1a1a1a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
+    #botao-edicao {
+      border: 1px solid #444;
+      background: transparent;
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    #botao-edicao.ativo { background: #f4c430; border-color: #f4c430; color: #1a1a1a; font-weight: bold; }
     /* A logo tem texto escuro, então precisa de um fundo branco próprio
        pra continuar legível mesmo com o cabeçalho agora preto. */
     #logo-box {
@@ -100,6 +113,15 @@
 
     #map { height: 100%; }
 
+    .tooltip-coordenadas {
+      font-size: 12px;
+      line-height: 1.4;
+      background: #1a1a1a;
+      color: #fff;
+      border: none;
+    }
+    .tooltip-coordenadas::before { border-top-color: #1a1a1a; }
+
     .popup-imovel { width: 220px; }
     .popup-imovel img { width: 100%; border-radius: 4px; margin-bottom: 6px; }
     .popup-imovel h3 { margin: 0 0 4px; font-size: 15px; }
@@ -117,6 +139,7 @@
       <div id="logo-box">
         <img src="logo.png" alt="Lopes Mirella">
       </div>
+      <button id="botao-edicao">🔒 Editar posições</button>
     </header>
 
     <div id="filtros"></div>
