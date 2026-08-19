@@ -28,9 +28,9 @@ camadaMapa.addTo(map);
 // Botão no canto do mapa pra alternar entre visão de ruas e satélite
 L.control.layers({ 'Mapa': camadaMapa, 'Satélite': camadaSatelite }).addTo(map);
 
-// Pins próximos entram aqui em vez de irem direto pro mapa — o plugin os
-// agrupa em bolhas com contagem, que se separam conforme o zoom aumenta.
-const grupoMarcadores = L.markerClusterGroup();
+// Grupo simples (sem agrupar em bolhas) — só existe pra poder esconder/
+// mostrar vários pins de uma vez quando um filtro é aplicado.
+const grupoMarcadores = L.layerGroup();
 map.addLayer(grupoMarcadores);
 
 const listaEl = document.getElementById('lista-imoveis');
@@ -151,9 +151,8 @@ function renderizarImoveis(imoveis) {
   function selecionar(item) {
     itens.forEach(i => i.card.classList.toggle('selecionado', i === item));
     item.card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    // Se o pin estiver escondido dentro de uma bolha de cluster, isso dá
-    // zoom até separar o grupo e revelar o marcador antes de abrir o popup.
-    grupoMarcadores.zoomToShowLayer(item.marker, () => item.marker.openPopup());
+    map.flyTo([item.imovel.lat, item.imovel.lng], 15);
+    item.marker.openPopup();
   }
 
   return itens;
@@ -272,10 +271,6 @@ botaoEdicao.addEventListener('click', () => {
   }
 
   todosItens.forEach(({ marker }) => {
-    // Guarda a intenção na própria opção do marcador — enquanto ele estiver
-    // escondido dentro de uma bolha de cluster, "dragging" nem existe ainda;
-    // o Leaflet só cria esse handler quando o pin aparece individual no
-    // mapa, e nessa hora ele lê essa opção pra decidir se já nasce arrastável.
     marker.options.draggable = modoEdicao;
     if (marker.dragging) {
       if (modoEdicao) marker.dragging.enable();
